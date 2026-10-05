@@ -1,0 +1,81 @@
+"""Archive quiet Beeper chats where no reply is owed. Started hourly by systemd."""
+import argparse
+import os
+import sys
+from datetime import datetime, timezone
+
+from beeper import BeeperClient
+from classifier import OllamaClassifier
+from rules import ARCHIVE, ASK, final_decision, pre_decision
+from state import DecisionStore
+
+DEFAULT_MODEL = "qwen3.5:4b"
+DEFAULT_STATE = "~/.local/state/dormouse/state.db"
+HISTORY_SIZE = 10
+
+
+def run_once(chats, classifier, store, model, archive_fn, now, log, history_fn=None):
+    """Decide every chat. archive_fn is None in dry run. history_fn(chat_id) gives the
+    recent messages for the model. Returns the archived count."""
+    count = 0
+    for chat in chats:
+        try:
+            action, reason = pre_decision(chat, now)
+            if action == ASK:
+                verdict = store.get(chat["id"], chat["lastActivity"], model)
+                if verdict is None:
+                    history = history_fn(chat["id"]) if history_fn else None
+                    verdict = classifier.needs_reply(chat, history)
+                    if verdict is not None:
+                        store.put(chat["id"], chat["lastActivity"], model, verdict)
+                action, reason = final_decision(verdict)
+            if action != ARCHIVE:
+                continue
+            text = " ".join(((chat.get("preview") or {}).get("text") or "").split())[:80]
+            title = chat.get("title") or chat["id"]
+            prefix = "WOULD-ARCHIVE" if archive_fn is None else "ARCHIVE"
+            if archive_fn is not None:
+                try:
+                    archive_fn(chat["id"])
+                except OSError as exc:
+                    log(f"ERROR archiving {chat['id']}: {exc}")
+                    continue
+            log(f"{prefix} [{reason}] {title} | {text}")
+            count += 1
+        except Exception as exc:
+            log(f"ERROR {chat.get('id')}: {exc}")
+            continue
+    return count
+
+
+def main(argv=None, env=None, client=None, store=None, log=print):
+    env = os.environ if env is None else env
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--model", default=env.get("BEEPER_ARCHIVE_MODEL", DEFAULT_MODEL))
+    args = parser.parse_args(argv)
+
+    live = env.get("ARCHIVE_ENABLED") == "1"
+    client = client or BeeperClient(env["BEEPER_ACCESS_TOKEN"])
+    store = store or DecisionStore(os.path.expanduser(env.get("STATE_DB", DEFAULT_STATE)))
+    classifier = OllamaClassifier(args.model)
+
+    try:
+        chats = list(client.iter_chats())
+    except (OSError, ValueError) as exc:
+        log(f"ERROR beeper api unreachable: {exc}")
+        return 1
+
+    archive_fn = (lambda cid: client.set_archived(cid, True)) if live else None
+    # The cache key names the history size, so verdicts made from the preview
+    # alone are not reused for the history-based prompt.
+    cache_key = f"{args.model}+history{HISTORY_SIZE}"
+    count = run_once(chats, classifier, store, cache_key, archive_fn,
+                     datetime.now(timezone.utc), log,
+                     lambda cid: client.recent_messages(cid, HISTORY_SIZE))
+    mode = "live" if live else "dry-run"
+    log(f"done: {len(chats)} chats, {count} archived ({mode}, model {args.model})")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

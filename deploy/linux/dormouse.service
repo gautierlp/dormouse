@@ -1,0 +1,12 @@
+# User unit, started by dormouse.timer. Dry run unless ARCHIVE_ENABLED=1
+# in the env file. Expects the repo cloned at ~/dormouse.
+[Unit]
+Description=dormouse: archive quiet Beeper chats where no reply is owed
+After=beeper-desktop.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=%h/.config/dormouse/env
+Environment=PYTHONUNBUFFERED=1
+TimeoutStartSec=55min
+ExecStart=/usr/bin/python3 %h/dormouse/src/dormouse.py

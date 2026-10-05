@@ -1,0 +1,10 @@
+# User unit. Every hour at :17, away from jobs that start on the round minute.
+[Unit]
+Description=Run dormouse every hour
+
+[Timer]
+OnCalendar=*:17
+Persistent=true
+
+[Install]
+WantedBy=timers.target

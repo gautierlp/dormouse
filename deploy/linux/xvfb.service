@@ -1,0 +1,12 @@
+# User unit. A virtual X display for Beeper Desktop on a machine with no screen.
+# Needs the xvfb package. To run with nobody logged in: `loginctl enable-linger $USER`.
+[Unit]
+Description=Virtual X display :99 for headless desktop apps
+
+[Service]
+ExecStart=/usr/bin/Xvfb :99 -screen 0 1280x800x24 -nolisten tcp
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

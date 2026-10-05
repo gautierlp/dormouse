@@ -1,0 +1,16 @@
+# User unit. Beeper Desktop on the virtual display, so its local API
+# (127.0.0.1:23373) is always up for dormouse.
+# The first sign-in is manual: see "Headless Linux" in the README.
+[Unit]
+Description=Beeper Desktop (headless, for the local API)
+Requires=xvfb.service
+After=xvfb.service
+
+[Service]
+Environment=DISPLAY=:99
+ExecStart=%h/apps/beeper/Beeper.AppImage
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=default.target
