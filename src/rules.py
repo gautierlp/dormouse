@@ -25,9 +25,8 @@ def pre_decision(chat, now):
     preview = chat.get("preview") or {}
     if preview.get("isSender"):
         return ARCHIVE, "sent-by-me"
-    if not (preview.get("text") or "").strip():
-        # A photo, voice note or sticker: the model cannot judge it.
-        return KEEP, "no-text"
+    # The other side acted last. That can be a reaction or a photo with no text:
+    # the runner looks at the last real messages before it decides.
     return ASK, "needs-model"
 
 

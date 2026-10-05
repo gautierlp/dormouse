@@ -238,11 +238,12 @@ question per chat: does the owner still owe an answer?
 1. **Archived or pinned:** skip it.
 2. **A message in the last 12 hours:** keep it. The conversation is still going.
 3. **You sent the last message:** archive it. The ball is in their court.
-4. **They sent the last message, with no text** (a photo, a voice note): keep it. The
-   model cannot judge a picture.
-5. **They sent the last message:** ask the model. It gets the chat type and the last
-   10 messages, oldest first, as `Me: ...` and `Léa: ...`. Ollama forces the answer
-   into `{"needs_reply": true}` or `false`.
+4. **They acted last:** read the last 10 real messages. Reactions and hidden events
+   do not count, so a thumbs up on your message leaves the ball in their court and the
+   chat is archived.
+5. **They wrote last:** ask the model. It gets the chat type and those 10 messages,
+   oldest first, as `Me: ...` and `Léa: ...`, with `[image]` or `[voice]` for a message
+   with no text. Ollama forces the answer into `{"needs_reply": true}` or `false`.
 
 Each verdict is cached in SQLite against the chat and the time of its last message,
 so a message is judged once, not once an hour. Any failure (the model times out,

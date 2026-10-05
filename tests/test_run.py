@@ -114,6 +114,37 @@ class HistoryTest(unittest.TestCase):
         self.assertEqual(clf.history, [{"text": "hi"}])
 
 
+class LastRealMessageTest(unittest.TestCase):
+    def setUp(self):
+        self.lines = []
+        self.store = DecisionStore(":memory:")
+
+    def go(self, c, clf, history):
+        run.run_once([c], clf, self.store, "m", None, NOW, self.lines.append,
+                     lambda cid: history)
+
+    def test_their_reaction_after_my_message_is_sent_by_me(self):
+        reaction_preview = chat("r", None, False, "Florian")
+        clf = FakeClassifier(True)
+        self.go(reaction_preview, clf, [{"isSender": False, "text": "dispo ?"},
+                                        {"isSender": True, "text": "oui, samedi"}])
+        self.assertEqual(clf.calls, 0)
+        self.assertEqual(self.lines, ["WOULD-ARCHIVE [sent-by-me] Florian | "])
+
+    def test_no_text_with_history_asks_the_model(self):
+        clf = FakeClassifier(False)
+        self.go(chat("p", None, False, "P"), clf, [{"isSender": True, "text": "photo ?"},
+                                                   {"isSender": False, "type": "IMAGE"}])
+        self.assertEqual(clf.calls, 1)
+        self.assertEqual(self.lines, ["WOULD-ARCHIVE [no-reply-needed] P | "])
+
+    def test_no_text_without_history_is_kept(self):
+        clf = FakeClassifier(False)
+        self.go(chat("n", None, False), clf, [])
+        self.assertEqual(clf.calls, 0)
+        self.assertEqual(self.lines, [])
+
+
 class MainTest(unittest.TestCase):
     def test_unreachable_api_exits_1(self):
         class DownClient:

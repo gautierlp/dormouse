@@ -43,9 +43,10 @@ class PreDecisionTest(unittest.TestCase):
         c = chat(preview={"text": "see you", "isSender": True, "senderName": "Me"})
         self.assertEqual(pre_decision(c, NOW), ("archive", "sent-by-me"))
 
-    def test_incoming_without_text_is_kept(self):
+    def test_incoming_without_text_asks_the_model(self):
+        # A reaction or a photo: the runner decides from the message history.
         c = chat(preview={"isSender": False, "senderName": "Alice"})
-        self.assertEqual(pre_decision(c, NOW), ("keep", "no-text"))
+        self.assertEqual(pre_decision(c, NOW), ("ask", "needs-model"))
 
     def test_incoming_with_text_asks_the_model(self):
         self.assertEqual(pre_decision(chat(), NOW), ("ask", "needs-model"))

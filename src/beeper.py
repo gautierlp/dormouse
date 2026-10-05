@@ -36,11 +36,15 @@ class BeeperClient:
             cursor = page["oldestCursor"]
 
     def recent_messages(self, chat_id, limit):
-        """The last `limit` messages of a chat, oldest first, deleted ones left out."""
+        """The last `limit` real messages of a chat, oldest first."""
         path = f"/v1/chats/{urllib.parse.quote(chat_id, safe='')}/messages?limit={limit}"
         items = self._request("GET", path).get("items", [])
         # The API returns newest first, and sometimes one more than `limit`.
-        kept = [m for m in items if not m.get("isDeleted")][:limit]
+        # Reactions and hidden events are not messages: a thumbs up on your
+        # message must not count as the other side writing last.
+        kept = [m for m in items
+                if not m.get("isDeleted") and not m.get("isHidden")
+                and m.get("type") != "REACTION"][:limit]
         return list(reversed(kept))
 
     def set_archived(self, chat_id, archived):

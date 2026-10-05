@@ -6,12 +6,31 @@ from datetime import datetime, timezone
 
 from beeper import BeeperClient
 from classifier import OllamaClassifier
-from rules import ARCHIVE, ASK, final_decision, pre_decision
+from rules import ARCHIVE, ASK, KEEP, final_decision, pre_decision
 from state import DecisionStore
 
 DEFAULT_MODEL = "qwen3.5:4b"
 DEFAULT_STATE = "~/.local/state/dormouse/state.db"
 HISTORY_SIZE = 10
+
+
+def decide_with_model(chat, classifier, store, model, history_fn):
+    """The other side acted last. Decide from the last real messages."""
+    verdict = store.get(chat["id"], chat["lastActivity"], model)
+    if verdict is not None:
+        return final_decision(verdict)
+    history = history_fn(chat["id"]) if history_fn else None
+    if history and history[-1].get("isSender"):
+        # Their last action was a reaction to my message: the ball is in their court.
+        return ARCHIVE, "sent-by-me"
+    preview_text = ((chat.get("preview") or {}).get("text") or "").strip()
+    if not history and not preview_text:
+        # Nothing the model can read.
+        return KEEP, "no-text"
+    verdict = classifier.needs_reply(chat, history)
+    if verdict is not None:
+        store.put(chat["id"], chat["lastActivity"], model, verdict)
+    return final_decision(verdict)
 
 
 def run_once(chats, classifier, store, model, archive_fn, now, log, history_fn=None):
@@ -22,13 +41,7 @@ def run_once(chats, classifier, store, model, archive_fn, now, log, history_fn=N
         try:
             action, reason = pre_decision(chat, now)
             if action == ASK:
-                verdict = store.get(chat["id"], chat["lastActivity"], model)
-                if verdict is None:
-                    history = history_fn(chat["id"]) if history_fn else None
-                    verdict = classifier.needs_reply(chat, history)
-                    if verdict is not None:
-                        store.put(chat["id"], chat["lastActivity"], model, verdict)
-                action, reason = final_decision(verdict)
+                action, reason = decide_with_model(chat, classifier, store, model, history_fn)
             if action != ARCHIVE:
                 continue
             text = " ".join(((chat.get("preview") or {}).get("text") or "").split())[:80]

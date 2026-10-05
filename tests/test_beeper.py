@@ -51,6 +51,17 @@ class BeeperClientTest(unittest.TestCase):
         self.assertEqual(url.path, "/v1/chats/a%2Fb/messages")
         self.assertEqual(urllib.parse.parse_qs(url.query)["limit"], ["10"])
 
+    def test_recent_messages_skip_reactions_and_hidden(self):
+        newest_first = [
+            {"id": "r", "type": "REACTION", "isHidden": True},
+            {"id": "h", "type": "TEXT", "text": "x", "isHidden": True},
+            {"id": "b", "type": "TEXT", "text": "merci"},
+            {"id": "a", "type": "IMAGE", "text": ""},
+        ]
+        opener = FakeOpener([json.dumps({"items": newest_first}).encode()])
+        msgs = BeeperClient("tok", opener=opener).recent_messages("c", 10)
+        self.assertEqual([m["id"] for m in msgs], ["a", "b"])
+
     def test_empty_page(self):
         opener = FakeOpener([json.dumps({"items": [], "hasMore": False}).encode()])
         self.assertEqual(list(BeeperClient("tok", opener=opener).iter_chats()), [])
