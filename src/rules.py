@@ -1,7 +1,10 @@
 """Pure decision rule: which Beeper chats to archive. No I/O here."""
-from datetime import datetime, timedelta
+import re
+from datetime import date, datetime, timedelta
 
 QUIET_PERIOD = timedelta(hours=12)
+# A day/month/year date in a chat title, as in event groups: "Party 09/10/26".
+TITLE_DATE = re.compile(r"\b(\d{1,2})/(\d{1,2})/(\d{4}|\d{2})\b")
 
 SKIP = "skip"
 KEEP = "keep"
@@ -13,10 +16,26 @@ def parse_ts(value):
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
+def event_date(title):
+    """The day/month/year date in a title, or None."""
+    match = TITLE_DATE.search(title or "")
+    if not match:
+        return None
+    day, month, year = (int(g) for g in match.groups())
+    try:
+        return date(year if year >= 100 else 2000 + year, month, day)
+    except ValueError:
+        return None
+
+
 def pre_decision(chat, now):
     """Decide what can be decided without the model. Returns (action, reason)."""
     if chat.get("isArchived") or chat.get("isPinned"):
         return SKIP, "archived-or-pinned"
+    when = event_date(chat.get("title"))
+    if when and when >= now.date():
+        # The event has not happened yet: the group is still live.
+        return KEEP, "upcoming-event"
     last = chat.get("lastActivity")
     if not last:
         return KEEP, "no-activity"

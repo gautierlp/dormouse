@@ -236,12 +236,17 @@ Once an hour, `src/dormouse.py` lists every chat from the Beeper API and asks on
 question per chat: does the owner still owe an answer?
 
 1. **Archived or pinned:** skip it.
-2. **A message in the last 12 hours:** keep it. The conversation is still going.
-3. **You sent the last message:** archive it. The ball is in their court.
-4. **They acted last:** read the last 10 real messages. Reactions and hidden events
+2. **A date still to come in the title** (`Party 09/10/26`, day/month/year): keep it.
+   An event group stays live until the day of the event.
+3. **A message in the last 12 hours:** keep it. The conversation is still going.
+4. **You sent the last message:** archive it. The ball is in their court.
+5. **They acted last:** read the last 10 real messages. Reactions and hidden events
    do not count, so a thumbs up on your message leaves the ball in their court and the
    chat is archived.
-5. **They wrote last:** ask the model. It gets the chat type and those 10 messages,
+6. **A one-to-one chat where you wrote none of those 10 messages:** keep it. Someone
+   is waiting on you, even if their last message is only an emoji. A small model tends
+   to read that emoji as a goodbye.
+7. **They wrote last:** ask the model. It gets the chat type and those 10 messages,
    oldest first, as `Me: ...` and `Lea: ...`, with `[image]` or `[voice]` for a message
    with no text. Ollama forces the answer into `{"needs_reply": true}` or `false`.
 
@@ -251,7 +256,8 @@ Beeper is down, one chat has bad data) keeps the chat in the inbox and moves on 
 next one.
 
 Beeper itself does the waking up: a new message in an archived chat moves it back to
-the inbox.
+the inbox. If you move a chat back yourself, dormouse leaves it alone until someone
+writes in it again.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

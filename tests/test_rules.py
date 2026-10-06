@@ -51,6 +51,20 @@ class PreDecisionTest(unittest.TestCase):
     def test_incoming_with_text_asks_the_model(self):
         self.assertEqual(pre_decision(chat(), NOW), ("ask", "needs-model"))
 
+    def test_event_group_before_its_date_is_kept(self):
+        # Event groups often carry the date in their title (day/month/year).
+        for title in ("Party 09/10/26", "07/10/2026 - Trip", "Dinner 5/10/26"):
+            c = chat(title=title, preview={"text": "see you", "isSender": True})
+            self.assertEqual(pre_decision(c, NOW), ("keep", "upcoming-event"), title)
+
+    def test_event_group_after_its_date_is_decided_as_usual(self):
+        c = chat(title="03/10/26 - Wedding")
+        self.assertEqual(pre_decision(c, NOW), ("ask", "needs-model"))
+
+    def test_impossible_date_in_title_is_ignored(self):
+        c = chat(title="Score 31/02/26")
+        self.assertEqual(pre_decision(c, NOW), ("ask", "needs-model"))
+
 
 class FinalDecisionTest(unittest.TestCase):
     def test_verdicts(self):

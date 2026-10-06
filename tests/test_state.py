@@ -23,6 +23,12 @@ class DecisionStoreTest(unittest.TestCase):
         self.store.put("c1", "t", "m", True)
         self.assertIs(self.store.get("c1", "t", "m"), True)
 
+    def test_archive_record(self):
+        self.assertFalse(self.store.was_archived("c1", "t"))
+        self.store.mark_archived("c1", "t")
+        self.assertTrue(self.store.was_archived("c1", "t"))
+        self.assertFalse(self.store.was_archived("c1", "t2"))
+
     def test_creates_parent_directory(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "nested", "state.db")

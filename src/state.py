@@ -1,4 +1,5 @@
-"""SQLite cache of model verdicts, keyed by chat, last activity and model."""
+"""SQLite cache of model verdicts, keyed by chat, last activity and model, and the
+record of what dormouse archived."""
 import os
 import sqlite3
 from datetime import datetime, timezone
@@ -19,6 +20,13 @@ class DecisionStore:
             " decided_at TEXT NOT NULL,"
             " PRIMARY KEY (chat_id, last_activity, model))"
         )
+        self.db.execute(
+            "CREATE TABLE IF NOT EXISTS archived ("
+            " chat_id TEXT NOT NULL,"
+            " last_activity TEXT NOT NULL,"
+            " archived_at TEXT NOT NULL,"
+            " PRIMARY KEY (chat_id, last_activity))"
+        )
         self.db.commit()
 
     def get(self, chat_id, last_activity, model):
@@ -36,3 +44,17 @@ class DecisionStore:
              datetime.now(timezone.utc).isoformat()),
         )
         self.db.commit()
+
+    def mark_archived(self, chat_id, last_activity):
+        self.db.execute(
+            "INSERT OR REPLACE INTO archived VALUES (?, ?, ?)",
+            (chat_id, last_activity, datetime.now(timezone.utc).isoformat()),
+        )
+        self.db.commit()
+
+    def was_archived(self, chat_id, last_activity):
+        row = self.db.execute(
+            "SELECT 1 FROM archived WHERE chat_id = ? AND last_activity = ?",
+            (chat_id, last_activity),
+        ).fetchone()
+        return row is not None

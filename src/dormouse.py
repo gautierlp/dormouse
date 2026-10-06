@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 from beeper import BeeperClient
 from classifier import OllamaClassifier
-from rules import ARCHIVE, ASK, KEEP, final_decision, pre_decision
+from rules import ARCHIVE, ASK, KEEP, SKIP, final_decision, pre_decision
 from state import DecisionStore
 
 DEFAULT_MODEL = "qwen3.5:4b"
@@ -23,6 +23,11 @@ def decide_with_model(chat, classifier, store, model, history_fn):
     if history and history[-1].get("isSender"):
         # Their last action was a reaction to my message: the ball is in their court.
         return ARCHIVE, "sent-by-me"
+    if (chat.get("type") == "single" and history
+            and not any(m.get("isSender") for m in history)):
+        # I wrote nothing in the recent messages: the other side waits on me,
+        # even when their last message is only an emoji.
+        return KEEP, "unanswered"
     preview_text = ((chat.get("preview") or {}).get("text") or "").strip()
     if not history and not preview_text:
         # Nothing the model can read.
@@ -40,6 +45,9 @@ def run_once(chats, classifier, store, model, archive_fn, now, log, history_fn=N
     for chat in chats:
         try:
             action, reason = pre_decision(chat, now)
+            if action != SKIP and store.was_archived(chat["id"], chat["lastActivity"]):
+                # I archived it and the owner moved it back, with nothing new said.
+                continue
             if action == ASK:
                 action, reason = decide_with_model(chat, classifier, store, model, history_fn)
             if action != ARCHIVE:
@@ -53,6 +61,7 @@ def run_once(chats, classifier, store, model, archive_fn, now, log, history_fn=N
                 except OSError as exc:
                     log(f"ERROR archiving {chat['id']}: {exc}")
                     continue
+                store.mark_archived(chat["id"], chat["lastActivity"])
             log(f"{prefix} [{reason}] {title} | {text}")
             count += 1
         except Exception as exc:
