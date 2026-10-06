@@ -226,6 +226,9 @@ On a server with no screen, Beeper Desktop runs on a virtual display.
    systemctl --user enable --now dormouse.timer
    journalctl --user -u dormouse -o cat | grep ARCHIVE
    ```
+5. To update, `git pull` in the clone. Each hourly run reads the code from there, so no
+   restart is needed. A change under `deploy/linux/` still needs the units copied again and
+   `systemctl --user daemon-reload`.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
