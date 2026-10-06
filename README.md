@@ -157,8 +157,8 @@ just run
 ```
 
 ```
-WOULD-ARCHIVE [sent-by-me] Léa | parfait, à jeudi alors
-WOULD-ARCHIVE [no-reply-needed] Climbing crew | haha trop bien
+WOULD-ARCHIVE [sent-by-me] Lea | perfect, see you Thursday
+WOULD-ARCHIVE [no-reply-needed] Climbing crew | haha love it
 WOULD-ARCHIVE [no-reply-needed] Bank | Your statement is ready
 done: 212 chats, 29 archived (dry-run, model qwen3.5:4b)
 ```
@@ -171,9 +171,9 @@ every hour (systemd units are in `deploy/linux/`).
 Your inbox at 9 am:
 
 ```
-Sam            tu viens samedi ?
-Léa            parfait, à jeudi alors
-Climbing crew  haha trop bien
+Sam            coming on Saturday?
+Lea            perfect, see you Thursday
+Climbing crew  haha love it
 Bank           Your statement is ready
 Mum            Did you see the photos? 😂
 ```
@@ -181,7 +181,7 @@ Mum            Did you see the photos? 😂
 What the dormouse leaves you:
 
 ```
-Sam            tu viens samedi ?
+Sam            coming on Saturday?
 Mum            Did you see the photos? 😂
 ```
 
@@ -242,7 +242,7 @@ question per chat: does the owner still owe an answer?
    do not count, so a thumbs up on your message leaves the ball in their court and the
    chat is archived.
 5. **They wrote last:** ask the model. It gets the chat type and those 10 messages,
-   oldest first, as `Me: ...` and `Léa: ...`, with `[image]` or `[voice]` for a message
+   oldest first, as `Me: ...` and `Lea: ...`, with `[image]` or `[voice]` for a message
    with no text. Ollama forces the answer into `{"needs_reply": true}` or `false`.
 
 Each verdict is cached in SQLite against the chat and the time of its last message,
@@ -282,7 +282,7 @@ No. It archives, and that is all it can do. Every chat is one tap away.
 
 **Why not Claude or GPT? They would judge better.**
 They would. They would also read every message you receive. A small local model is
-good enough to tell "ok 👍" from "tu viens samedi ?".
+good enough to tell "ok 👍" from "coming on Saturday?".
 
 **How slow is it?**
 One verdict takes 10 to 20 seconds on a 2018 office PC with no GPU. The first run
