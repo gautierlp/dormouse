@@ -14,8 +14,7 @@ Stdlib only, tests included. Imports are flat (`import rules`) with `src/` on th
 
 ## Rules
 
-- Private for now, meant to go public: no personal value in code, tests, units or the
-  README. Scrub the spec before the repo goes public.
+- Public repo: no personal value in code, tests, units, specs or the README.
 - Every failure path keeps the chat in the inbox. Nothing can delete a chat.
 - No cloud model: messages never leave the machine.
 - TDD, one test file per module. No em dashes anywhere.
