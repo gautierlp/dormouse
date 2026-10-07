@@ -254,7 +254,7 @@ question per chat: does the owner still owe an answer?
    someone who sends you a photo usually waits for a reaction.
 8. **They wrote last:** ask the model. It gets the chat type and those 10 messages,
    oldest first, as `Me: ...` and `Lea: ...`, with `[image]` or `[voice]` for a message
-   with no text (in a group chat, or before a captioned photo). Ollama forces the answer into `{"needs_reply": true}` or `false`.
+   with no text (for example, a photo in a group chat). Ollama forces the answer into `{"needs_reply": true}` or `false`.
 
 Each verdict is cached in SQLite against the chat and the time of its last message,
 so a message is judged once, not once an hour. Any failure (the model times out,
