@@ -28,6 +28,11 @@ def decide_with_model(chat, classifier, store, model, history_fn):
         # I wrote nothing in the recent messages: the other side waits on me,
         # even when their last message is only an emoji.
         return KEEP, "unanswered"
+    if (chat.get("type") == "single" and history
+            and not (history[-1].get("text") or "").strip()):
+        # Their last message is a photo or a file with no text. The model sees
+        # only "[image]" and reads it as nothing to answer, but they wait on me.
+        return KEEP, "attachment"
     preview_text = ((chat.get("preview") or {}).get("text") or "").strip()
     if not history and not preview_text:
         # Nothing the model can read.

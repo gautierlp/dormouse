@@ -249,9 +249,12 @@ question per chat: does the owner still owe an answer?
 6. **A one-to-one chat where you wrote none of those 10 messages:** keep it. Someone
    is waiting on you, even if their last message is only an emoji. A small model tends
    to read that emoji as a goodbye.
-7. **They wrote last:** ask the model. It gets the chat type and those 10 messages,
+7. **A one-to-one chat where their last message is a photo or a file with no text:**
+   keep it. The model only sees `[image]` and reads it as nothing to answer, but
+   someone who sends you a photo usually waits for a reaction.
+8. **They wrote last:** ask the model. It gets the chat type and those 10 messages,
    oldest first, as `Me: ...` and `Lea: ...`, with `[image]` or `[voice]` for a message
-   with no text. Ollama forces the answer into `{"needs_reply": true}` or `false`.
+   with no text (in a group chat, or before a captioned photo). Ollama forces the answer into `{"needs_reply": true}` or `false`.
 
 Each verdict is cached in SQLite against the chat and the time of its last message,
 so a message is judged once, not once an hour. Any failure (the model times out,

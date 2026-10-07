@@ -131,12 +131,31 @@ class LastRealMessageTest(unittest.TestCase):
         self.assertEqual(clf.calls, 0)
         self.assertEqual(self.lines, ["WOULD-ARCHIVE [sent-by-me] Florian | "])
 
-    def test_no_text_with_history_asks_the_model(self):
+    def test_their_photo_in_a_one_to_one_chat_is_kept(self):
+        # The model sees a photo only as "[image]" and reads it as nothing to
+        # answer. Someone who sends a photo usually waits for a reaction.
         clf = FakeClassifier(False)
         self.go(chat("p", None, False, "P"), clf, [{"isSender": True, "text": "photo ?"},
                                                    {"isSender": False, "type": "IMAGE"}])
+        self.assertEqual(clf.calls, 0)
+        self.assertEqual(self.lines, [])
+
+    def test_their_photo_with_a_caption_asks_the_model(self):
+        clf = FakeClassifier(False)
+        self.go(chat("c", "voilà", False, "C"), clf,
+                [{"isSender": True, "text": "photo ?"},
+                 {"isSender": False, "type": "IMAGE", "text": "voilà"}])
         self.assertEqual(clf.calls, 1)
-        self.assertEqual(self.lines, ["WOULD-ARCHIVE [no-reply-needed] P | "])
+        self.assertEqual(self.lines, ["WOULD-ARCHIVE [no-reply-needed] C | voilà"])
+
+    def test_photo_in_a_group_chat_asks_the_model(self):
+        clf = FakeClassifier(False)
+        g = chat("g", None, False, "G")
+        g["type"] = "group"
+        self.go(g, clf, [{"isSender": True, "text": "photo ?"},
+                         {"isSender": False, "type": "IMAGE"}])
+        self.assertEqual(clf.calls, 1)
+        self.assertEqual(self.lines, ["WOULD-ARCHIVE [no-reply-needed] G | "])
 
     def test_no_text_without_history_is_kept(self):
         clf = FakeClassifier(False)
