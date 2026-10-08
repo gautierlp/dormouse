@@ -43,13 +43,20 @@ def decide_with_model(chat, classifier, store, model, history_fn):
     return final_decision(verdict)
 
 
-def run_once(chats, classifier, store, model, archive_fn, now, log, history_fn=None):
+def always_archive_names(env):
+    """The comma-separated chat titles of ALWAYS_ARCHIVE, lowercase."""
+    names = (n.strip().lower() for n in env.get("ALWAYS_ARCHIVE", "").split(","))
+    return {n for n in names if n}
+
+
+def run_once(chats, classifier, store, model, archive_fn, now, log, history_fn=None,
+             always_archive=frozenset()):
     """Decide every chat. archive_fn is None in dry run. history_fn(chat_id) gives the
     recent messages for the model. Returns the archived count."""
     count = 0
     for chat in chats:
         try:
-            action, reason = pre_decision(chat, now)
+            action, reason = pre_decision(chat, now, always_archive)
             if action != SKIP and store.was_archived(chat["id"], chat["lastActivity"]):
                 # I archived it and the owner moved it back, with nothing new said.
                 continue
@@ -98,7 +105,8 @@ def main(argv=None, env=None, client=None, store=None, log=print):
     cache_key = f"{args.model}+history{HISTORY_SIZE}"
     count = run_once(chats, classifier, store, cache_key, archive_fn,
                      datetime.now(timezone.utc), log,
-                     lambda cid: client.recent_messages(cid, HISTORY_SIZE))
+                     lambda cid: client.recent_messages(cid, HISTORY_SIZE),
+                     always_archive_names(env))
     mode = "live" if live else "dry-run"
     log(f"done: {len(chats)} chats, {count} archived ({mode}, model {args.model})")
     return 0

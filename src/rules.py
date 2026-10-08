@@ -28,8 +28,9 @@ def event_date(title):
         return None
 
 
-def pre_decision(chat, now):
-    """Decide what can be decided without the model. Returns (action, reason)."""
+def pre_decision(chat, now, always_archive=frozenset()):
+    """Decide what can be decided without the model. Returns (action, reason).
+    always_archive holds lowercase chat titles that never need a reply, such as bots."""
     if chat.get("isArchived") or chat.get("isPinned"):
         return SKIP, "archived-or-pinned"
     when = event_date(chat.get("title"))
@@ -41,6 +42,8 @@ def pre_decision(chat, now):
         return KEEP, "no-activity"
     if now - parse_ts(last) < QUIET_PERIOD:
         return KEEP, "recent"
+    if (chat.get("title") or "").strip().lower() in always_archive:
+        return ARCHIVE, "always-archive"
     preview = chat.get("preview") or {}
     if preview.get("isSender"):
         return ARCHIVE, "sent-by-me"

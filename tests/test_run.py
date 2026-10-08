@@ -222,6 +222,22 @@ class RestoredTest(unittest.TestCase):
 
 
 class MainTest(unittest.TestCase):
+    def test_always_archive_skips_the_unanswered_rule_and_the_model(self):
+        clf = FakeClassifier(True)
+        archived, lines = [], []
+        run.run_once([chat("bot", "Resting heart rate: 52", False, "Health Bot")], clf,
+                     DecisionStore(":memory:"), "m", archived.append, NOW, lines.append,
+                     lambda cid: [{"text": "Resting heart rate: 52", "isSender": False}],
+                     always_archive={"health bot"})
+        self.assertEqual(archived, ["bot"])
+        self.assertEqual(clf.calls, 0)
+        self.assertEqual(lines, ["ARCHIVE [always-archive] Health Bot | Resting heart rate: 52"])
+
+    def test_always_archive_names_come_from_the_env(self):
+        self.assertEqual(run.always_archive_names({"ALWAYS_ARCHIVE": " Health Bot ,Alerts,, "}),
+                         {"health bot", "alerts"})
+        self.assertEqual(run.always_archive_names({}), set())
+
     def test_unreachable_api_exits_1(self):
         class DownClient:
             def iter_chats(self):

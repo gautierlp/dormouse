@@ -140,6 +140,7 @@ All settings live in `~/.config/dormouse/env`:
 | `BEEPER_ACCESS_TOKEN` | none | The token from step 3. Required. |
 | `ARCHIVE_ENABLED` | `0` | `1` archives for real. Anything else is a dry run. |
 | `BEEPER_ARCHIVE_MODEL` | `qwen3.5:4b` | Any Ollama model that can return JSON. |
+| `ALWAYS_ARCHIVE` | none | Comma-separated chat titles that never need a reply, such as a bot that pings you. They are archived after the quiet period, with no model call. Case does not matter. |
 | `STATE_DB` | `~/.local/state/dormouse/state.db` | Where the model's verdicts are cached. |
 
 The quiet period (12 hours) and the history size (10 messages) are constants at the

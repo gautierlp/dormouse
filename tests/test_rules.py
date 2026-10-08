@@ -57,6 +57,18 @@ class PreDecisionTest(unittest.TestCase):
             c = chat(title=title, preview={"text": "see you", "isSender": True})
             self.assertEqual(pre_decision(c, NOW), ("keep", "upcoming-event"), title)
 
+    def test_always_archive_chat_is_archived_when_quiet(self):
+        # A bot that pings the owner: nobody waits for an answer, whatever it says.
+        c = chat(title="Health Bot")
+        self.assertEqual(pre_decision(c, NOW, {"health bot"}), ("archive", "always-archive"))
+
+    def test_always_archive_chat_is_kept_while_recent(self):
+        c = chat(title="Health Bot", lastActivity=RECENT)
+        self.assertEqual(pre_decision(c, NOW, {"health bot"}), ("keep", "recent"))
+
+    def test_always_archive_does_not_touch_other_chats(self):
+        self.assertEqual(pre_decision(chat(), NOW, {"health bot"}), ("ask", "needs-model"))
+
     def test_event_group_after_its_date_is_decided_as_usual(self):
         c = chat(title="03/10/26 - Wedding")
         self.assertEqual(pre_decision(c, NOW), ("ask", "needs-model"))
