@@ -64,8 +64,8 @@ def run_once(chats, classifier, store, model, archive_fn, now, log, history_fn=N
                 action, reason = decide_with_model(chat, classifier, store, model, history_fn)
             if action != ARCHIVE:
                 continue
-            text = " ".join(((chat.get("preview") or {}).get("text") or "").split())[:80]
-            title = chat.get("title") or chat["id"]
+            # Title only: the message text can hold links with tokens.
+            title = " ".join((chat.get("title") or chat["id"]).split())
             prefix = "WOULD-ARCHIVE" if archive_fn is None else "ARCHIVE"
             if archive_fn is not None:
                 try:
@@ -74,7 +74,7 @@ def run_once(chats, classifier, store, model, archive_fn, now, log, history_fn=N
                     log(f"ERROR archiving {chat['id']}: {exc}")
                     continue
                 store.mark_archived(chat["id"], chat["lastActivity"])
-            log(f"{prefix} [{reason}] {title} | {text}")
+            log(f"{prefix} [{reason}] {title}")
             count += 1
         except Exception as exc:
             log(f"ERROR {chat.get('id')}: {exc}")

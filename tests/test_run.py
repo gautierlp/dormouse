@@ -43,22 +43,24 @@ class RunOnceTest(unittest.TestCase):
         chats = [chat("mine", "see you", True, "Bob"), chat("theirs", "ok thanks", False, "Alice")]
         self.go(chats, FakeClassifier(False))
         self.assertEqual(self.lines, [
-            "WOULD-ARCHIVE [sent-by-me] Bob | see you",
-            "WOULD-ARCHIVE [no-reply-needed] Alice | ok thanks",
+            "WOULD-ARCHIVE [sent-by-me] Bob",
+            "WOULD-ARCHIVE [no-reply-needed] Alice",
         ])
 
     def test_live_archives(self):
         archived = []
         self.go([chat("mine", "see you", True, "Bob")], FakeClassifier(False), archived.append)
         self.assertEqual(archived, ["mine"])
-        self.assertEqual(self.lines, ["ARCHIVE [sent-by-me] Bob | see you"])
+        self.assertEqual(self.lines, ["ARCHIVE [sent-by-me] Bob"])
 
-    def test_reply_needed_is_kept_and_text_is_truncated(self):
-        long_text = "x" * 200 + "?"
-        self.go([chat("q", long_text, False)], FakeClassifier(True))
+    def test_reply_needed_is_kept(self):
+        self.go([chat("q", "are you free?", False)], FakeClassifier(True))
         self.assertEqual(self.lines, [])
-        self.go([chat("n", long_text, False, "N")], FakeClassifier(False))
-        self.assertEqual(self.lines, ["WOULD-ARCHIVE [no-reply-needed] N | " + "x" * 80])
+
+    def test_log_line_never_holds_the_message_text(self):
+        # Messages can hold links with tokens: the journal gets the title only.
+        self.go([chat("n", "https://host/?token=s3cret", False, "N")], FakeClassifier(False))
+        self.assertEqual(self.lines, ["WOULD-ARCHIVE [no-reply-needed] N"])
 
     def test_cache_hit_and_errors_not_cached(self):
         clf = FakeClassifier(False)
@@ -89,11 +91,11 @@ class RunOnceTest(unittest.TestCase):
         bad["lastActivity"] = "garbage"
         self.go([bad, chat("good", "see you", True, "Bob")], FakeClassifier(False))
         self.assertTrue(any(l.startswith("ERROR bad") for l in self.lines))
-        self.assertIn("WOULD-ARCHIVE [sent-by-me] Bob | see you", self.lines)
+        self.assertIn("WOULD-ARCHIVE [sent-by-me] Bob", self.lines)
 
-    def test_newline_in_text_cannot_split_the_log_line(self):
-        self.go([chat("mine", "a\nb", True, "Bob")], FakeClassifier(False))
-        self.assertEqual(self.lines, ["WOULD-ARCHIVE [sent-by-me] Bob | a b"])
+    def test_newline_in_title_cannot_split_the_log_line(self):
+        self.go([chat("mine", "hi", True, "Bob\nAlice")], FakeClassifier(False))
+        self.assertEqual(self.lines, ["WOULD-ARCHIVE [sent-by-me] Bob Alice"])
 
 
 class HistoryTest(unittest.TestCase):
@@ -129,7 +131,7 @@ class LastRealMessageTest(unittest.TestCase):
         self.go(reaction_preview, clf, [{"isSender": False, "text": "dispo ?"},
                                         {"isSender": True, "text": "oui, samedi"}])
         self.assertEqual(clf.calls, 0)
-        self.assertEqual(self.lines, ["WOULD-ARCHIVE [sent-by-me] Florian | "])
+        self.assertEqual(self.lines, ["WOULD-ARCHIVE [sent-by-me] Florian"])
 
     def test_their_photo_in_a_one_to_one_chat_is_kept(self):
         # The model sees a photo only as "[image]" and reads it as nothing to
@@ -146,7 +148,7 @@ class LastRealMessageTest(unittest.TestCase):
                 [{"isSender": True, "text": "photo ?"},
                  {"isSender": False, "type": "IMAGE", "text": "voilà"}])
         self.assertEqual(clf.calls, 1)
-        self.assertEqual(self.lines, ["WOULD-ARCHIVE [no-reply-needed] C | voilà"])
+        self.assertEqual(self.lines, ["WOULD-ARCHIVE [no-reply-needed] C"])
 
     def test_photo_in_a_group_chat_asks_the_model(self):
         clf = FakeClassifier(False)
@@ -155,7 +157,7 @@ class LastRealMessageTest(unittest.TestCase):
         self.go(g, clf, [{"isSender": True, "text": "photo ?"},
                          {"isSender": False, "type": "IMAGE"}])
         self.assertEqual(clf.calls, 1)
-        self.assertEqual(self.lines, ["WOULD-ARCHIVE [no-reply-needed] G | "])
+        self.assertEqual(self.lines, ["WOULD-ARCHIVE [no-reply-needed] G"])
 
     def test_no_text_without_history_is_kept(self):
         clf = FakeClassifier(False)
@@ -188,7 +190,7 @@ class UnansweredTest(unittest.TestCase):
         g["type"] = "group"
         self.go(g, clf, [{"isSender": False, "text": "lol"}])
         self.assertEqual(clf.calls, 1)
-        self.assertEqual(self.lines, ["WOULD-ARCHIVE [no-reply-needed] G | lol"])
+        self.assertEqual(self.lines, ["WOULD-ARCHIVE [no-reply-needed] G"])
 
 
 class RestoredTest(unittest.TestCase):
@@ -231,7 +233,7 @@ class MainTest(unittest.TestCase):
                      always_archive={"health bot"})
         self.assertEqual(archived, ["bot"])
         self.assertEqual(clf.calls, 0)
-        self.assertEqual(lines, ["ARCHIVE [always-archive] Health Bot | Resting heart rate: 52"])
+        self.assertEqual(lines, ["ARCHIVE [always-archive] Health Bot"])
 
     def test_always_archive_names_come_from_the_env(self):
         self.assertEqual(run.always_archive_names({"ALWAYS_ARCHIVE": " Health Bot ,Alerts,, "}),

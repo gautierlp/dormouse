@@ -158,9 +158,9 @@ just run
 ```
 
 ```
-WOULD-ARCHIVE [sent-by-me] Lea | perfect, see you Thursday
-WOULD-ARCHIVE [no-reply-needed] Climbing crew | haha love it
-WOULD-ARCHIVE [no-reply-needed] Bank | Your statement is ready
+WOULD-ARCHIVE [sent-by-me] Lea
+WOULD-ARCHIVE [no-reply-needed] Climbing crew
+WOULD-ARCHIVE [no-reply-needed] Bank
 done: 212 chats, 29 archived (dry-run, model qwen3.5:4b)
 ```
 
@@ -276,8 +276,8 @@ Your messages never leave the machine.
 * Beeper Desktop API: local only, `127.0.0.1:23373`, remote access off.
 * The model: Ollama on `127.0.0.1:11434`. No cloud model, by design. A cheaper hosted
   one exists, and it would see every message you get.
-* Logs: one line per archived chat, with the chat name and the first 80 characters of
-  the last message. They stay in your local journal.
+* Logs: one line per archived chat, with the chat name and the reason. Never the
+  message text, which can hold links with tokens. They stay in your local journal.
 * Token: in `~/.config/dormouse/env`, `chmod 600`, never in the repo.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
