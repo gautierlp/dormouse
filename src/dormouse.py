@@ -57,7 +57,8 @@ def run_once(chats, classifier, store, model, archive_fn, now, log, history_fn=N
     for chat in chats:
         try:
             action, reason = pre_decision(chat, now, always_archive)
-            if action != SKIP and store.was_archived(chat["id"], chat["lastActivity"]):
+            # A kept chat needs no store lookup, and it can have no lastActivity at all.
+            if action not in (SKIP, KEEP) and store.was_archived(chat["id"], chat["lastActivity"]):
                 # I archived it and the owner moved it back, with nothing new said.
                 continue
             if action == ASK:

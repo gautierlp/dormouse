@@ -93,6 +93,12 @@ class RunOnceTest(unittest.TestCase):
         self.assertTrue(any(l.startswith("ERROR bad") for l in self.lines))
         self.assertIn("WOULD-ARCHIVE [sent-by-me] Bob", self.lines)
 
+    def test_chat_with_no_last_activity_is_kept_without_error(self):
+        empty = chat("empty", "x", False)
+        del empty["lastActivity"]
+        self.go([empty], FakeClassifier(False))
+        self.assertEqual(self.lines, [])
+
     def test_newline_in_title_cannot_split_the_log_line(self):
         self.go([chat("mine", "hi", True, "Bob\nAlice")], FakeClassifier(False))
         self.assertEqual(self.lines, ["WOULD-ARCHIVE [sent-by-me] Bob Alice"])
